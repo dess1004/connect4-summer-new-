@@ -1,0 +1,385 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What Will You Do This Summer? Connect 4</title>
+
+<style>
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  padding:15px;
+  font-family:Arial, sans-serif;
+  background:#f4f8ff;
+  text-align:center;
+}
+
+h1{
+  color:#1e3a8a;
+  margin-bottom:10px;
+}
+
+#status{
+  font-size:1.2rem;
+  font-weight:bold;
+  margin-bottom:15px;
+}
+
+.controls{
+  margin-bottom:15px;
+}
+
+button{
+  padding:10px 18px;
+  border:none;
+  border-radius:8px;
+  font-size:1rem;
+  cursor:pointer;
+}
+
+#newGame{
+  background:#2563eb;
+  color:white;
+}
+
+#winner{
+  margin:12px;
+  font-size:1.5rem;
+  font-weight:bold;
+  color:#9333ea;
+  min-height:40px;
+}
+
+#board{
+  display:grid;
+  grid-template-columns:repeat(7, 1fr);
+  gap:6px;
+  max-width:1100px;
+  margin:0 auto;
+}
+
+.cell{
+  min-height:90px;
+  border:2px solid #dbeafe;
+  border-radius:10px;
+  background:white;
+  padding:8px;
+  font-size:0.9rem;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  cursor:pointer;
+  transition:.2s;
+  user-select:none;
+}
+
+.cell:hover{
+  transform:scale(1.03);
+}
+
+.red{
+  background:#ef4444;
+  color:white;
+  border-color:#dc2626;
+}
+
+.yellow{
+  background:#facc15;
+  color:black;
+  border-color:#eab308;
+}
+.available{
+border:5px solid #22c55e !important;
+box-shadow:0 0 18px #22c55e;
+animation:pulse 1s infinite;
+}
+
+@keyframes pulse{
+0%{transform:scale(1);}
+50%{transform:scale(1.05);}
+100%{transform:scale(1);}
+}
+
+@media (max-width:900px){
+
+  #board{
+    grid-template-columns:repeat(6,1fr);
+  }
+
+  .cell{
+    min-height:80px;
+    font-size:0.82rem;
+  }
+}
+
+@media (max-width:650px){
+
+  #board{
+    grid-template-columns:repeat(4,1fr);
+  }
+
+  .cell{
+    min-height:75px;
+    font-size:0.78rem;
+  }
+}
+</style>
+</head>
+<body>
+
+<h1>🌞 What Will You Do This Summer? Connect 4</h1>
+
+<div id="status">🔴 Red Team's Turn</div>
+
+<div class="controls">
+  <button id="newGame">🔄 New Game</button>
+</div>
+
+<div id="winner"></div>
+
+<div id="board"></div>
+
+<script>
+
+const sentences = [
+"What will you do this weekend?",
+"What will you do tomorrow?",
+"What will you do this vacation?",
+"What will you do this summer?",
+"How about you?",
+
+"I'll join a science camp.",
+"I'll grow tomatoes.",
+"I'll visit my grandpa.",
+"I'll read many books.",
+"I'll learn taekwondo.",
+"I'll study English.",
+"I'll join a basketball camp.",
+
+"It will be fun.",
+"That sounds great.",
+
+"I'll join a science camp this summer.",
+"I'll grow tomatoes this summer.",
+"I'll visit my grandpa this weekend.",
+"I'll read many books this vacation.",
+"I'll learn taekwondo this summer.",
+"I'll study English this vacation.",
+"I'll join a basketball camp this summer.",
+
+"I'll visit my grandpa tomorrow.",
+"I'll study English this weekend.",
+"I'll grow tomatoes this vacation.",
+"I'll read many books this summer.",
+"I'll join a basketball camp this vacation.",
+"I'll learn taekwondo this weekend.",
+
+"What will you do this summer?",
+"What will you do tomorrow?",
+"What will you do this vacation?",
+"What will you do this weekend?",
+
+"It will be fun.",
+"That sounds great.",
+"How about you?",
+
+"I'll join a science camp.",
+"I'll grow tomatoes.",
+"I'll visit my grandpa.",
+"I'll read many books.",
+"I'll learn taekwondo.",
+"I'll study English.",
+"I'll join a basketball camp.",
+"I'll visit my grandpa.",
+];
+
+const COLS = 7;
+const ROWS = 6;
+
+let currentPlayer = "red";
+let gameOver = false;
+let boardState = [];
+
+const board = document.getElementById("board");
+const statusText = document.getElementById("status");
+const winnerText = document.getElementById("winner");
+
+function shuffle(arr){
+  return [...arr].sort(()=>Math.random()-0.5);
+}
+
+function startGame(){
+
+  gameOver = false;
+  currentPlayer = "red";
+  winnerText.textContent = "";
+  statusText.textContent = "🔴 Red Team's Turn";
+
+  board.innerHTML = "";
+
+  const shuffled = shuffle(sentences);
+
+  boardState = [];
+
+  for(let r=0;r<ROWS;r++){
+    boardState[r] = [];
+
+    for(let c=0;c<COLS;c++){
+
+      const text = shuffled[r*COLS+c];
+
+      boardState[r][c] = "";
+
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.textContent = text;
+      cell.dataset.row = r;
+      cell.dataset.col = c;
+
+      cell.addEventListener("click", ()=>claimCell(cell,r,c));
+
+      board.appendChild(cell);
+    }
+  }
+  updateAvailableCells();
+}
+
+
+
+function claimCell(cell,row,col){
+
+if(gameOver) return;
+
+if(boardState[row][col] !== ""){
+alert("This space is already taken.");
+return;
+}
+
+let lowestEmpty = -1;
+
+for(let r = ROWS - 1; r >= 0; r--){
+if(boardState[r][col] === ""){
+lowestEmpty = r;
+break;
+}
+}
+
+if(row !== lowestEmpty){
+alert("⚠ Choose the bottom empty space first!");
+return;
+}
+
+boardState[row][col] = currentPlayer;
+cell.classList.add(currentPlayer);
+updateAvailableCells();
+
+if(checkWin(row,col,currentPlayer)){
+gameOver = true;
+
+winnerText.textContent =
+  currentPlayer === "red"
+  ? "🎉 Red Team Wins!"
+  : "🎉 Yellow Team Wins!";
+return;
+
+}
+
+currentPlayer =
+currentPlayer === "red"
+? "yellow"
+: "red";
+
+statusText.textContent =
+currentPlayer === "red"
+? "🔴 Red Team's Turn"
+: "🟡 Yellow Team's Turn";
+}
+
+
+
+
+
+function countDirection(row,col,dr,dc,player){
+
+  let count = 1;
+
+  let r=row+dr;
+  let c=col+dc;
+
+  while(
+    r>=0 && r<ROWS &&
+    c>=0 && c<COLS &&
+    boardState[r][c]===player
+  ){
+    count++;
+    r+=dr;
+    c+=dc;
+  }
+
+  r=row-dr;
+  c=col-dc;
+
+  while(
+    r>=0 && r<ROWS &&
+    c>=0 && c<COLS &&
+    boardState[r][c]===player
+  ){
+    count++;
+    r-=dr;
+    c-=dc;
+  }
+
+  return count;
+}
+
+
+function updateAvailableCells(){
+
+document.querySelectorAll(".cell")
+.forEach(cell=>cell.classList.remove("available"));
+
+for(let c=0;c<COLS;c++){
+
+for(let r=ROWS-1;r>=0;r--){
+
+  if(boardState[r][c] === ""){
+
+    const index = r * COLS + c;
+    board.children[index]
+      .classList.add("available");
+
+    break;
+  }
+}
+
+}
+}
+
+
+function checkWin(row,col,player){
+
+  return (
+    countDirection(row,col,0,1,player) >= 4 ||
+    countDirection(row,col,1,0,player) >= 4 ||
+    countDirection(row,col,1,1,player) >= 4 ||
+    countDirection(row,col,1,-1,player) >= 4
+  );
+}
+
+document.getElementById("newGame")
+.addEventListener("click",startGame);
+
+
+
+startGame();
+
+</script>
+
+</body>
+</html>
